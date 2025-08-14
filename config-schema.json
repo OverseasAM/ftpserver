@@ -326,8 +326,12 @@
                     },
                     "params": {
                         "username": "user",
+                        "method": "password",
                         "password": "password",
-                        "hostname": "192.168.168.11:22"
+                        "privateKey": "/home/user/.ssh/id_rsa",
+                        "privateKeyPassphrase": "passphrase",
+                        "hostname": "sftpserver.local:22",
+                        "basePath": "/home/user"
                     }
                 }]
             }
