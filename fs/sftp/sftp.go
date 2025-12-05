@@ -109,22 +109,39 @@ func LoadFs(access *confpar.Access) (afero.Fs, error) {
 		return nil, &ConnectionError{Source: errSftp}
 	}
 
-	// Get the SFTP user's home directory
-	/*
-		homeDir, err := client.Getwd()
+	// Get the actual home directory from the SFTP server
+	homeDir, err := client.Getwd()
+	if err != nil {
+		// If we can't get working directory, try to get it via RealPath
+		homeDir, err = client.RealPath(".")
 		if err != nil {
-			return nil, &ConnectionError{Source: fmt.Errorf("unable to get SFTP home directory: %w", err)}
+			return nil, &ConnectionError{Source: fmt.Errorf("unable to determine SFTP home directory: %w", err)}
 		}
-
-		//fmt.Println("SFTP user's home directory:", homeDir)
-	*/
-
-	basePath, hasBasePath := par["basePath"]
-	if hasBasePath && basePath != "" {
-		fs := afero.NewBasePathFs(sftpfs.New(client), basePath)
-		return fs, nil
 	}
 
-	return sftpfs.New(client), nil
+	basePath, hasBasePath := par["basePath"]
 
+	var targetPath string
+	if hasBasePath && basePath != "" {
+		// Use explicit base path if provided
+		targetPath = basePath
+		// Verify the base path exists
+		if _, err := client.Stat(basePath); err != nil {
+			// Try relative to home directory
+			relPath := strings.TrimPrefix(basePath, "/")
+			if homeDir != "/" {
+				targetPath = homeDir + "/" + relPath
+			} else {
+				targetPath = "/" + relPath
+			}
+		}
+	} else {
+		// Use the home directory as base path
+		targetPath = homeDir
+	}
+
+	// Always use RootPathFs for proper path translation, passing the SFTP client for direct access
+	fs := NewRootPathFs(sftpfs.New(client), targetPath, client)
+
+	return fs, nil
 }
