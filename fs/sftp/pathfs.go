@@ -31,10 +31,9 @@ func NewRootPathFs(source afero.Fs, homeDir string, sftpClient *pkgsftp.Client) 
 func (r *RootPathFs) translatePath(name string) string {
 	var result string
 	if name == "/" || name == "" {
-		// Root directory: use empty string for current directory
-		// This avoids issues with SFTP servers that don't allow listing "/"
+		// Root directory: use current directory marker
 		if r.homeDir == "/" {
-			result = ""
+			result = "."
 		} else {
 			result = r.homeDir
 		}
@@ -42,8 +41,8 @@ func (r *RootPathFs) translatePath(name string) string {
 		// Remove leading slash and join with home directory
 		relativePath := strings.TrimPrefix(name, "/")
 		if r.homeDir == "/" {
-			// If home is root, use simple relative paths (no leading dots or slashes)
-			result = relativePath
+			// If home is root, use relative paths from current directory
+			result = "./" + relativePath
 		} else {
 			result = r.homeDir + "/" + relativePath
 		}

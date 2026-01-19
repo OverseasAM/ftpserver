@@ -10,3 +10,5 @@ __*
 bin/
 id_rsa
 id_rsa.pub
+id_25519*
+*.pub
